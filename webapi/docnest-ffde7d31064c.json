@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "docnest",
+  "private_key_id": "ffde7d31064cf109dc8c56036fb47378436b4000",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEuwIBADANBgkqhkiG9w0BAQEFAASCBKUwggShAgEAAoIBAQCd+9Lb2sTPobJ9\nMw3URZb+zMzbzbnagZqwGTRexzz5JkoPRteQDgjRQwiG3aok36xXNIKHlVO4WjYT\nqsUMulCZwZus3jC7crAt17HJcSGLz+hKxQbKFq3415l5CEf1VuQAkKL30yGRSsxc\nJ1HFvd61NbKI7xZnv5EcublXkeugXwxF5PKsfw06ib5+6qlEkHyZPtk+Z9RvL1JB\nGJedT663BmPdFNebVTYAcU6n91IHvxbwNcTsXVQqO8NIRZdzeUIyz/3QKzo8Co3e\nlEmhAX7DgjhcF94amVdcBX2F523a+G9ur55TywrocMMW0CJh9+rMaeIfxVDnT119\nf1b+wlPzAgMBAAECgf8kt+LKNo6Hs41IjBUqwQHXNsJmU+peXsEVLMZ/QM9rGPsd\nkdmIIbrq6CmTLvHcoB/uJMYxvQM4Vb870vT5gFQ7aERGaV3qMz2/aeJob2Lcm/Xh\naumpDpxgubtx5frTit5zQyqdbvTeUAQvZvQagYbBlzlnmioa8utHQeNR9xhMrW0X\nNSOwd2Djj3V7QyX5oQzHvm5DeZ0TN94+x8/j1/lv3Wh/ATfLxUhPZqTlXogpRcuC\nZlbaoY7AHRhP4wMHmgkN5xHWH4QqZv1It6f7dC9f+WG2BytP4tV8/lZ092DbYFFT\nul21Wy9hFGsaRI5+lqmDroyTufYVUcBxpmP0UjECgYEA0rCubow/kbzKFXeazjRd\n2K2uKhxDQ3P6hJr3rKDlkV+pejv/qk2/wHgc+RjRdi3+OQJ4430v+OJgxz2/0boH\nZB8KQ2Tagsqd9hMwqOPBEFyxIk7uBmYGAm2wtb3itZNEpZghD1EXrIY7lwYJyIex\nu5aTja3yuzC2noEtvKkrsgMCgYEAv/VxwvTEkaBukS87743tsTe/GqoT4oN1ld+S\nsCsSfxeETS9wwpjtUsPGjDbjeumnPYWjt3fo5XiY9eguVBEocdfNzMCJSHyH5HAl\nf5yCZoiNSwk/3tjowQjjgyeEWmKSxKkvEoLR8c7IVCejPui1YD8dDFbSa4HCVHDo\n51Stq1ECgYBHoFksq/FQkmYBNlAimhrtdt4m4sTbQaqBOk3JGknxShxLueoI87Wk\nsTDoXk+XZbtvli+S5xRQAGX2Vj/IBP5OQ18x2i+PF2LsLUn1oLgZ3+k4SK0S78xL\nNw9EOfHA2PgVc8qJcoAh3uCTTzI0Qi1iIKa5G9HRYZYz/KaX5Ms+EQKBgEp4XS8G\nKHBaripzCayRAkK7Xs9oZhh9aZPATbc8rotRw0jye6tzCrcOLqvc63mWxgPvIame\nwmKr26Oi9L42fdtUnomttFTDwzCTdWjBfjFrDm2q4/V/byTcXu9V2Fn8XfYfsJxc\n1jgaQcusKP/R5fO16H4N/MoqaAq8Vw7P4iRRAoGBAIFdVszRvqPxJ5vecIEIC71u\niFf4Vp+owxxWcGjFUajzAvXBrPQDDMutizbrYPswD7Bu43Dcs94Gmck5N4FoEyZC\ne/PQ/fmyj1qBo6RzEy9E6o4VPQW5isdSfE0OGFTsbj2wfx9z6plOCllxecB2rENS\nE8ArQM1VqScQr9KQ+pb8\n-----END PRIVATE KEY-----\n",
+  "client_email": "asp-net-core-sa@docnest.iam.gserviceaccount.com",
+  "client_id": "118399364482694336553",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/asp-net-core-sa%40docnest.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
