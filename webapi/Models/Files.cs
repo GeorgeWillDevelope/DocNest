@@ -10,7 +10,7 @@
 
         public string? OwnerId { get; set; }
 
-        public FileType FileType { get; set; }  
+        public string FileType { get; set; }  
 
         public string? ThumbnailFileName { get; set; }  
 

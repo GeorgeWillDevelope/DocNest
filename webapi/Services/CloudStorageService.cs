@@ -8,7 +8,7 @@ namespace webapi.Service
     public interface ICloudStorageService
     {
         Task<string> GetSignedUrlAsync(string fileNameToRead, int timeOutInMinutes = 30);
-        Task<string> UploadFileAsunc(IFormFile fileToUpload, string fileNameToSave);
+        Task<string> UploadFileAsync(IFormFile fileToUpload, string fileNameToSave);
         Task DeleteFileAsync(string fileNameToDelete);
     }
 
@@ -76,7 +76,7 @@ namespace webapi.Service
             }
         }
 
-        public async Task<string> UploadFileAsunc(IFormFile fileToUpload, string fileNameToSave)
+        public async Task<string> UploadFileAsync(IFormFile fileToUpload, string fileNameToSave)
         {
             try
             {

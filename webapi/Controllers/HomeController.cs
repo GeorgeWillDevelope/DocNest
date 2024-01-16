@@ -1,48 +1,92 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using DocumentFormat.OpenXml.Packaging;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Drawing;
-using System;
-using System.IO;
-using System.Configuration;
-using System.Runtime.InteropServices;
 using Syncfusion.XlsIO;
 using Aspose.Pdf;
 using Aspose.Pdf.Devices;
+using webapi.Service;
+using webapi.Data;
+using DocumentFormat.OpenXml.Presentation;
+using webapi.Models;
+using System.IO;
 
 namespace webapi.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class HomeController : ControllerBase
     {
-        [AllowAnonymous]
-        [HttpPost("UploadFile")]
-        public async Task<IActionResult> UploadFile(IFormFile files)
+        private readonly DocNestDbContext _context;
+        private readonly ICloudStorageService _cloudStorageService;
+
+        public HomeController(DocNestDbContext context, ICloudStorageService cloudStorageService)
         {
-            if (files == null || files.Length == 0)
-                return BadRequest("File not selected");
-
-            // Process the file here
-            // For example, save it to the server or perform any required actions
-
-            // You can replace this logic with your actual file processing logic
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", files.FileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await files.CopyToAsync(stream);
-            }
-
-            return Ok("File uploaded successfully");
+            _context = context;
+            _cloudStorageService = cloudStorageService;
         }
 
+        [AllowAnonymous]
+        [HttpPost("UploadFiles")]
+        public async Task<IActionResult> UploadFiles(List<IFormFile> files)
+        {
+            if (files == null || files.Count == 0)
+                return BadRequest("No files selected");
 
+            foreach (var file in files)
+            {
+                Files fileInfo = new Files
+                {
+                    FileName = GenerateFileNameToSave(file.FileName, false),
+                    DateOfUpload = DateTime.Now,
+                    FileType = file.ContentType
+                };
 
+                await _cloudStorageService.UploadFileAsync(file, fileInfo.FileName);
 
+                // Generate thumbnail and save
+                var bitmap = GenerateThumbnail(fileInfo.FileName, file.OpenReadStream());
+                SaveThumbnail(bitmap, fileInfo.FileName);
 
-        private string GenerateThumbnail(string fileName, Stream fileStream)
+                _context.Add(fileInfo);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Files uploaded successfully");
+        }
+
+        private async void SaveThumbnail(Bitmap bitmap, string fileName)
+        {
+            var thumbnailFileName = GenerateFileNameToSave(fileName, true);
+
+            using (var stream = new MemoryStream())
+            {
+                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+
+                // Reset the stream position to the beginning
+                stream.Position = 0;
+
+                // Create a new FormFile
+                var formFile = new FormFile(stream, 0, stream.Length, fileName, thumbnailFileName)
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = "image/png" // Set the content type based on the image format
+                };
+
+                await _cloudStorageService.UploadFileAsync(formFile, thumbnailFileName);
+            }
+        }
+
+        private string? GenerateFileNameToSave(string incomingFileName, bool isThumbnail)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(incomingFileName);
+            var extension = isThumbnail ? ".png" : Path.GetExtension(incomingFileName);
+            return isThumbnail ? $"{fileName}-thumbnail-{DateTime.Now.ToUniversalTime().ToString("yyyyMMddHHmmss")}{extension}"
+                : $"{fileName}-{DateTime.Now.ToUniversalTime().ToString("yyyyMMddHHmmss")}{extension}";
+        }
+
+        private Bitmap GenerateThumbnail(string fileName, Stream fileStream)
         {
             var extension = Path.GetExtension(fileName)?.ToLower();
 
@@ -61,7 +105,7 @@ namespace webapi.Controllers
             }
         }
 
-        private string GenerateExcelThumbnail(Stream excelFileStream)
+        private Bitmap GenerateExcelThumbnail(Stream excelFileStream)
         {
             // Initialize XlsIO
             using (var excelEngine = new ExcelEngine())
@@ -86,12 +130,12 @@ namespace webapi.Controllers
                     var bitmap = new Bitmap(stream);
 
                     // Save the bitmap as a thumbnail image
-                    return SaveThumbnail(bitmap);
+                    return bitmap;
                 }
             }
         }
 
-        private string GenerateWordThumbnail(Stream wordFileStream)
+        private Bitmap GenerateWordThumbnail(Stream wordFileStream)
         {
 
             using (var reader = new MemoryStream())
@@ -108,12 +152,13 @@ namespace webapi.Controllers
                 {
                     // We create a thumbnail (0.5 width and height = 50%)
                     img.GetThumbnailImage((int)(img.Width * 0.5), (int)(img.Height * 0.5), null, IntPtr.Zero).Save(ms2, System.Drawing.Imaging.ImageFormat.Png);
-                    // Convert to Base64 string representation of the image
-                    return Convert.ToBase64String(ms2.ToArray());
+                    // Save the bitmap as a thumbnail image
+                    return new Bitmap(ms2);
                 }
             }
         }
-        private string GeneratePdfThumbnail(Stream pdfFileStream)
+
+        private Bitmap GeneratePdfThumbnail(Stream pdfFileStream)
         {
             // Assuming the first page of the PDF
             var pageNumber = 1;
@@ -125,7 +170,7 @@ namespace webapi.Controllers
             var resizedBitmap = new Bitmap(pdfBitmap, new Size(100, 100));
 
             // Save the resized bitmap as a thumbnail image
-            return SaveThumbnail(resizedBitmap);
+            return resizedBitmap;
         }
 
         private Bitmap RenderPdfToBitmap(Stream pdfFileStream, int pageNumber)
@@ -155,7 +200,7 @@ namespace webapi.Controllers
             }
         }
 
-        private string GenerateTextThumbnail(Stream textFileStream)
+        private Bitmap GenerateTextThumbnail(Stream textFileStream)
         {
             // Read the text from the text file (assuming it's short)
             using (var reader = new StreamReader(textFileStream))
@@ -174,19 +219,11 @@ namespace webapi.Controllers
                 var bitmap = new Bitmap(200, 200);
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
-                    graphics.DrawString(text, new Font("Arial", 10), Brushes.Black, new PointF(10, 10));
+                    graphics.DrawString(text, new System.Drawing.Font("Arial", 10), Brushes.Black, new PointF(10, 10));
                 }
 
-                return SaveThumbnail(bitmap);
+                return bitmap;
             }
-        }
-
-        private string SaveThumbnail(Bitmap bitmap)
-        {
-            var thumbnailPath = Path.Combine(Directory.GetCurrentDirectory(), "thumbnails", $"{Guid.NewGuid()}_thumbnail.png");
-            bitmap.Save(thumbnailPath);
-
-            return thumbnailPath;
         }
     }
 }
