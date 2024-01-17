@@ -60,7 +60,7 @@ namespace webapi.Migrations
                     FileName = table.Column<string>(type: "text", nullable: true),
                     DateOfUpload = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     OwnerId = table.Column<string>(type: "text", nullable: true),
-                    FileType = table.Column<int>(type: "integer", nullable: false),
+                    FileType = table.Column<string>(type: "text", nullable: false),
                     ThumbnailFileName = table.Column<string>(type: "text", nullable: true),
                     NumberOfDownloads = table.Column<int>(type: "integer", nullable: false)
                 },

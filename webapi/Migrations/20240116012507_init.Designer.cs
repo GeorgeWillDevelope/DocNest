@@ -12,7 +12,7 @@ using webapi.Data;
 namespace webapi.Migrations
 {
     [DbContext(typeof(DocNestDbContext))]
-    [Migration("20240115065240_init")]
+    [Migration("20240116012507_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -235,8 +235,9 @@ namespace webapi.Migrations
                     b.Property<string>("FileName")
                         .HasColumnType("text");
 
-                    b.Property<int>("FileType")
-                        .HasColumnType("integer");
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("NumberOfDownloads")
                         .HasColumnType("integer");

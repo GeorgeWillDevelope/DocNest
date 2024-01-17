@@ -1,4 +1,7 @@
-﻿namespace webapi.Models
+﻿using OfficeOpenXml.ConditionalFormatting.Contracts;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace webapi.Models
 {
     public class Files
     {
@@ -15,6 +18,9 @@
         public string? ThumbnailFileName { get; set; }  
 
         public int NumberOfDownloads { get; set; }
+
+        [NotMapped]
+        public string ThumbnailUrl {  get; set; }
 
     }
 }

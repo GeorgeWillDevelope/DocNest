@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Microsoft.EntityFrameworkCore;
 using webapi.Data;
 using webapi.Service;
@@ -15,8 +16,16 @@ builder.Services.AddDbContext<DocNestDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 builder.Services.Configure<GCSConfigOptions>(builder.Configuration);
 builder.Services.AddSingleton<ICloudStorageService, CloudStorageService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(options.DefaultPolicyName,
+                                            policy => policy.AllowAnyOrigin()
+                                                    .AllowAnyHeader()
+                                                    .AllowAnyMethod());
+});
 
 var app = builder.Build();
 
@@ -28,6 +37,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.MapControllers();
 

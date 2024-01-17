@@ -11,7 +11,7 @@ namespace webapi.Service
         Task<string> UploadFileAsync(IFormFile fileToUpload, string fileNameToSave);
         Task DeleteFileAsync(string fileNameToDelete);
     }
-
+ 
     public class CloudStorageService : ICloudStorageService
     {
         private readonly ILogger<CloudStorageService> _logger;

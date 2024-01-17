@@ -9,24 +9,26 @@ using webapi.Data;
 using DocumentFormat.OpenXml.Presentation;
 using webapi.Models;
 using System.IO;
+using System.Net.Http;
 
 namespace webapi.Controllers
 {
-
+    [AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
     public class HomeController : ControllerBase
     {
         private readonly DocNestDbContext _context;
         private readonly ICloudStorageService _cloudStorageService;
+        private readonly HttpClient _httpClient;
 
-        public HomeController(DocNestDbContext context, ICloudStorageService cloudStorageService)
+        public HomeController(DocNestDbContext context, ICloudStorageService cloudStorageService, HttpClient httpClient)
         {
             _context = context;
             _cloudStorageService = cloudStorageService;
+            _httpClient = httpClient;
         }
-
-        [AllowAnonymous]
+        
         [HttpPost("UploadFiles")]
         public async Task<IActionResult> UploadFiles(List<IFormFile> files)
         {
@@ -38,15 +40,17 @@ namespace webapi.Controllers
                 Files fileInfo = new Files
                 {
                     FileName = GenerateFileNameToSave(file.FileName, false),
-                    DateOfUpload = DateTime.Now,
-                    FileType = file.ContentType
+                    DateOfUpload = DateTime.UtcNow,
+                    FileType = file.ContentType,
+                    ThumbnailFileName = GenerateFileNameToSave(file.FileName, true)
                 };
 
                 await _cloudStorageService.UploadFileAsync(file, fileInfo.FileName);
 
                 // Generate thumbnail and save
                 var bitmap = GenerateThumbnail(fileInfo.FileName, file.OpenReadStream());
-                SaveThumbnail(bitmap, fileInfo.FileName);
+
+                SaveThumbnail(bitmap, fileInfo.ThumbnailFileName);
 
                 _context.Add(fileInfo);
             }
@@ -56,10 +60,109 @@ namespace webapi.Controllers
             return Ok("Files uploaded successfully");
         }
 
+        [HttpGet("ListAll")]
+        public async Task<IActionResult> ListAll()
+        {
+            var files = _context.Files.ToList();  // Fetch your data from the database or another source
+
+            var thumbnailList = files.Select(async file =>
+            {
+                // Populate the ThumbnailUrl property with corresponding IFormFile
+                file.ThumbnailUrl = await _cloudStorageService.GetSignedUrlAsync(file.ThumbnailFileName);
+
+                return new
+                {
+                    file.Id,
+                    file.FileName,
+                    file.DateOfUpload,
+                    file.FileType,
+                    file.NumberOfDownloads,
+                    file.ThumbnailUrl
+                };
+            });
+
+            return new JsonResult(thumbnailList);
+        }
+
+        [HttpGet("DownloadFile/{id}")]
+        public async Task<IActionResult> DownloadFile(int id)
+        {
+            try
+            {
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        // Fetch the file information from the database
+                        var file = await _context.Files.FindAsync(id);
+
+                        if (file == null)
+                        {
+                            transaction.Rollback();
+                            return NotFound();
+                        }
+
+                        // Get the signed URL for the file from the cloud storage service
+                        var fileUrl = await _cloudStorageService.GetSignedUrlAsync(file.FileName);
+
+                        // File Download incrementation
+                        file.NumberOfDownloads += 1;
+                        _context.Update(file);
+                        await _context.SaveChangesAsync();
+
+                        // Download the file content
+                        var fileContent = await _httpClient.GetByteArrayAsync(fileUrl);
+
+                        // Commit the transaction
+                        transaction.Commit();
+
+                        // Return the file content with appropriate headers
+                        return File(fileContent, file.FileType);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the exception or handle it accordingly
+                        transaction.Rollback();
+                        return StatusCode(500, "Internal Server Error");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it accordingly
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
+        [HttpPost("ShareUrl")]
+        public async Task<IActionResult> ShareUrl([FromBody] UrlRequestModel model)
+        {
+            if (model.Minutes <= 0)
+            {
+                return BadRequest("Invalid duration. Duration must be greater than 0.");
+            }
+
+            var file = await _context.Files.FindAsync(model.Id);
+
+            if (file == null)
+            {
+                return NotFound();
+            }
+
+            var fileUrl = await _cloudStorageService.GetSignedUrlAsync(file.FileName, model.Minutes);
+
+
+            return Ok(fileUrl);
+        }
+
+        public class UrlRequestModel
+        {
+            public int Id { get; set; }
+            public int Minutes { get; set; }
+        }
+
         private async void SaveThumbnail(Bitmap bitmap, string fileName)
         {
-            var thumbnailFileName = GenerateFileNameToSave(fileName, true);
-
             using (var stream = new MemoryStream())
             {
                 bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
@@ -68,14 +171,15 @@ namespace webapi.Controllers
                 stream.Position = 0;
 
                 // Create a new FormFile
-                var formFile = new FormFile(stream, 0, stream.Length, fileName, thumbnailFileName)
+                var formFile = new FormFile(stream, 0, stream.Length, fileName, fileName)
                 {
                     Headers = new HeaderDictionary(),
                     ContentType = "image/png" // Set the content type based on the image format
                 };
 
-                await _cloudStorageService.UploadFileAsync(formFile, thumbnailFileName);
+                await _cloudStorageService.UploadFileAsync(formFile, fileName);
             }
+
         }
 
         private string? GenerateFileNameToSave(string incomingFileName, bool isThumbnail)
@@ -100,6 +204,12 @@ namespace webapi.Controllers
                     return GeneratePdfThumbnail(fileStream);
                 case ".txt":
                     return GenerateTextThumbnail(fileStream);
+                case ".png":
+                    return GenerateImageThumbnail(fileStream);
+                case ".jpeg":
+                    return GenerateImageThumbnail(fileStream);
+                case ".jpg":
+                    return GenerateImageThumbnail(fileStream);
                 default:
                     throw new NotSupportedException($"File type '{extension}' is not supported for thumbnail generation.");
             }
@@ -151,7 +261,7 @@ namespace webapi.Controllers
                 using (var ms2 = new MemoryStream())
                 {
                     // We create a thumbnail (0.5 width and height = 50%)
-                    img.GetThumbnailImage((int)(img.Width * 0.5), (int)(img.Height * 0.5), null, IntPtr.Zero).Save(ms2, System.Drawing.Imaging.ImageFormat.Png);
+                    img.GetThumbnailImage(300, 300, null, IntPtr.Zero).Save(ms2, System.Drawing.Imaging.ImageFormat.Png);
                     // Save the bitmap as a thumbnail image
                     return new Bitmap(ms2);
                 }
@@ -184,10 +294,10 @@ namespace webapi.Controllers
             using (MemoryStream imageStream = new MemoryStream())
             {
                 // Create Resolution object
-                Resolution resolution = new Resolution(300);
+                Resolution resolution = new Resolution(800);
 
                 // Create an instance of JpegDevice and set height, width, resolution, and quality of the image
-                JpegDevice jpegDevice = new JpegDevice(45, 59, resolution, 100);
+                JpegDevice jpegDevice = new JpegDevice(300, 300, resolution, 100);
 
                 // Convert a particular page and save the image to stream
                 jpegDevice.Process(page, imageStream);
@@ -216,13 +326,29 @@ namespace webapi.Controllers
                 var text = string.Join(Environment.NewLine, lines);
 
                 // Create a simple thumbnail with the text
-                var bitmap = new Bitmap(200, 200);
+                var bitmap = new Bitmap(300, 300);
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
                     graphics.DrawString(text, new System.Drawing.Font("Arial", 10), Brushes.Black, new PointF(10, 10));
                 }
 
                 return bitmap;
+            }
+        }
+
+        public Bitmap GenerateImageThumbnail(Stream imageStream)
+        {
+            // Load the image from the stream using System.Drawing.Bitmap
+            using (var originalBitmap = new Bitmap(imageStream))
+            {
+                // Resize the image to create a thumbnail
+                var thumbnailBitmap = new Bitmap(300, 300);
+                using (var graphics = Graphics.FromImage(thumbnailBitmap))
+                {
+                    graphics.DrawImage(originalBitmap, 0, 0, 300, 300);
+                }
+
+                return thumbnailBitmap;
             }
         }
     }

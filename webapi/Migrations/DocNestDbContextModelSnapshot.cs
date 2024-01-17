@@ -232,8 +232,9 @@ namespace webapi.Migrations
                     b.Property<string>("FileName")
                         .HasColumnType("text");
 
-                    b.Property<int>("FileType")
-                        .HasColumnType("integer");
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("NumberOfDownloads")
                         .HasColumnType("integer");
