@@ -22,9 +22,9 @@ builder.Services.AddSingleton<ICloudStorageService, CloudStorageService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(options.DefaultPolicyName,
-                                            policy => policy.AllowAnyOrigin()
-                                                    .AllowAnyHeader()
-                                                    .AllowAnyMethod());
+                        policy => policy.AllowAnyOrigin()
+                                .AllowAnyHeader()
+                                .AllowAnyMethod());
 });
 
 var app = builder.Build();

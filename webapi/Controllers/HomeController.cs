@@ -63,7 +63,7 @@ namespace webapi.Controllers
         [HttpGet("ListAll")]
         public async Task<IActionResult> ListAll()
         {
-            var files = _context.Files.ToList();  // Fetch your data from the database or another source
+            var files = _context.Files.ToList();  
 
             var thumbnailList = files.Select(async file =>
             {
@@ -93,7 +93,6 @@ namespace webapi.Controllers
                 {
                     try
                     {
-                        // Fetch the file information from the database
                         var file = await _context.Files.FindAsync(id);
 
                         if (file == null)
@@ -113,15 +112,12 @@ namespace webapi.Controllers
                         // Download the file content
                         var fileContent = await _httpClient.GetByteArrayAsync(fileUrl);
 
-                        // Commit the transaction
                         transaction.Commit();
 
-                        // Return the file content with appropriate headers
                         return File(fileContent, file.FileType);
                     }
                     catch (Exception ex)
                     {
-                        // Log the exception or handle it accordingly
                         transaction.Rollback();
                         return StatusCode(500, "Internal Server Error");
                     }
@@ -129,7 +125,6 @@ namespace webapi.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception or handle it accordingly
                 return StatusCode(500, "Internal Server Error");
             }
         }
