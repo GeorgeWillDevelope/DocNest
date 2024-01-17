@@ -33,3 +33,35 @@ Ensure you have the following prerequisites installed before running the applica
 
    ```bash
    npm install
+
+2. Set up the database:
+
+```bash
+# Replace the placeholders with your PostgreSQL credentials
+dotnet ef database update
+
+3. Start the application:
+
+```bash
+# Replace the placeholders with your PostgreSQL credentials
+dotnet run
+
+## Testing
+Run tests with:
+
+```bash
+npm test
+Architecture and Design Decisions
+The project uses React.js for the frontend, ASP.NET Core for the backend, and PostgreSQL as the database. The application employs a modular and scalable architecture to handle various file types efficiently.
+
+Improvements
+While the current implementation covers all the specified requirements, potential improvements include:
+
+Enhanced user interface for a more intuitive experience.
+Additional file type support.
+Integration of cloud storage for scalability.
+...
+Feel free to contribute and suggest improvements!
+
+License
+This project is licensed under the MIT License.
